@@ -1,0 +1,175 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>¿Ya salió? · Todos los sorteos del Melate desde 1984</title>
+<meta name="description" content="El mismo boleto ganó el Melate dos veces, con 41 años de diferencia. Y los números calientes no sirven: lo comprobamos con los 4,286 sorteos.">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://matmat202.github.io/ya-salio/">
+<meta property="og:title" content="¿Ya salió?">
+<meta property="og:description" content="El mismo boleto ganó el Melate dos veces, con 41 años de diferencia. Prueba tus números en los 4,286 sorteos desde 1984.">
+<meta property="og:image" content="https://matmat202.github.io/ya-salio/icons/card.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:locale" content="es_MX">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="apple-touch-icon" href="icons/icon-180.png">
+<style>
+  :root { --bg:#fbf8f2; --ink:#1d1b18; --mute:#6b655c; --line:#e3ddd2; --ball:#c8102e; --ok:#1f7a4d; --card:#fff; }
+  @media (prefers-color-scheme: dark) { :root { --bg:#16140f; --ink:#f1ece2; --mute:#a59d90; --line:#3a352c; --card:#211e18; --ball:#d63a52; --ok:#4fbf86; } }
+  * { box-sizing: border-box; }
+  body { margin:0; background:var(--bg); color:var(--ink); font:17px/1.5 system-ui, -apple-system, "Segoe UI", sans-serif; }
+  main { max-width: 680px; margin: 0 auto; padding: 24px 18px 60px; }
+  h1 { font-size: 1.9rem; line-height:1.15; margin: .2em 0 .4em; }
+  h2 { font-size: 1.3rem; margin: 2.2em 0 .4em; }
+  p { margin: .5em 0; }
+  .mute { color: var(--mute); font-size: .92rem; }
+  .card { background:var(--card); border:1px solid var(--line); border-radius:14px; padding:14px 16px; margin:12px 0; }
+  .draw { display:flex; align-items:center; gap:12px; flex-wrap:wrap; }
+  .draw .when { min-width: 150px; font-size:.95rem; }
+  .draw .when b { display:block; }
+  .balls { display:flex; gap:6px; flex-wrap:wrap; }
+  .b { width:38px; height:38px; border-radius:50%; background:var(--ball); color:#fff; font-weight:700; display:grid; place-items:center; font-variant-numeric: tabular-nums; }
+  .b.off { background:transparent; color:var(--mute); border:1.5px solid var(--line); }
+  button { font:inherit; border:1px solid var(--line); background:var(--card); color:var(--ink); border-radius:999px; padding:8px 14px; cursor:pointer; }
+  button[aria-pressed="true"] { background:var(--ink); color:var(--bg); border-color:var(--ink); }
+  .row { display:flex; gap:8px; flex-wrap:wrap; margin:10px 0; }
+  .big { font-size:2.2rem; font-weight:800; line-height:1.1; font-variant-numeric: tabular-nums; }
+  .bars { display:grid; grid-template-columns: max-content 1fr max-content; gap:6px 10px; align-items:center; font-size:.95rem; }
+  .bar { height:14px; border-radius:7px; background:var(--line); position:relative; overflow:hidden; }
+  .bar i { position:absolute; inset:0 auto 0 0; background:var(--ball); border-radius:7px; }
+  .bar.ref i { background:var(--mute); }
+  .grid { display:grid; grid-template-columns: repeat(8, 1fr); gap:5px; max-width: 420px; }
+  .grid button { padding:0; height:38px; border-radius:50%; font-variant-numeric: tabular-nums; }
+  .grid button[aria-pressed="true"] { background:var(--ball); border-color:var(--ball); color:#fff; }
+  footer { margin-top:3em; font-size:.85rem; color:var(--mute); }
+  a { color: inherit; }
+</style>
+</head>
+<body>
+<main>
+  <p class="mute" id="kicker">Melate · todos los sorteos desde 1984</p>
+  <h1>El mismo boleto ganó dos veces, con 41 años de diferencia.</h1>
+  <div class="card" id="twins"></div>
+  <p id="twinsay"></p>
+  <div class="row"><button id="why" aria-expanded="false">¿Cómo puede pasar eso?</button></div>
+  <div id="whybox" hidden>
+    <div class="card">
+      <p>La probabilidad de que <b>ese</b> sorteo de 2025 repitiera <b>esa</b> combinación de 1984 era de
+        <b id="p1"></b>. Casi imposible.</p>
+      <p>Pero nadie estaba esperando esa combinación. La pregunta de verdad es: ¿qué tan probable era que
+        <b>alguna</b> combinación se repitiera, entre <b id="ndraws"></b> sorteos? Son <b id="npairs"></b>
+        parejas de sorteos, y cada una es una oportunidad.</p>
+      <p class="big" id="pany"></p>
+      <p>Es la misma razón por la que en un salón de 23 personas lo normal es que dos cumplan años el mismo día.
+        Lo raro no es la coincidencia: lo raro sería que nunca hubiera ninguna.</p>
+    </div>
+  </div>
+
+  <h2>Rómpelo: escoge cómo jugar</h2>
+  <p>Los sitios de resultados publican los «números calientes» (los que más han salido) y los «fríos»
+    (los que «ya les toca»). Escoge una estrategia y la jugamos en cada sorteo desde 2007, cuando el Melate pasó a 56 números,
+    escogiendo los números con lo que se sabía <i>antes</i> de cada sorteo.</p>
+  <div class="row" id="strats"></div>
+  <div class="card" id="stratout"></div>
+
+  <h2>¿Y tus números?</h2>
+  <p>Toca seis números: los de siempre, los cumpleaños de la familia, lo que quieras. Te decimos qué les habría tocado en cada sorteo desde 1984.</p>
+  <div class="grid" id="grid"></div>
+  <div class="row"><button id="clear">Borrar</button> <button id="lucky">Seis al azar</button></div>
+  <div class="card" id="mine"><p class="mute">Faltan 6 números.</p></div>
+
+  <h2>Lo que «no parece al azar»</h2>
+  <div class="card" id="consec"></div>
+
+  <footer>
+    <p>Datos: el histórico oficial de Pronósticos para la Asistencia Pública
+      (<a id="src" href="#">Melate.csv</a>), <span id="span"></span>. Solo los seis números naturales; el adicional no cuenta aquí.
+      Tamaño de la urna por época según es.wikipedia «Melate»: 39 números al inicio, 44 desde el sorteo 555, 47 desde el 1547, 51 desde el 1877 y 56 desde el 2088.</p>
+    <p>Esto no es un sistema para ganar, y no hay ninguno: es lo contrario.</p>
+  </footer>
+</main>
+<script src="draws.js"></script>
+<script src="melate.js"></script>
+<script>
+const { draws, pools, source } = window.MELATE;
+const M = window.Melate, $ = (id) => document.getElementById(id);
+const N = pools[pools.length - 1][1];
+const MESES = ['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre'];
+const fecha = (iso) => { const [y, m, d] = iso.split('-').map(Number); return `${d} de ${MESES[m - 1]} de ${y}`; };
+const fmt = (x) => Math.round(x).toLocaleString('es-MX');
+const pct = (x, d = 1) => (100 * x).toLocaleString('es-MX', { minimumFractionDigits: d, maximumFractionDigits: d }) + '%';
+const balls = (six, on) => `<div class="balls">${six.map((x) => `<span class="b${on && !on.includes(x) ? ' off' : ''}">${x}</span>`).join('')}</div>`;
+
+// 1. the twins
+const reps = M.repeats(draws);
+if (reps.length) {
+  const [a, b] = reps[0];
+  $('twins').innerHTML = [a, b].map((d) => `<div class="draw"><div class="when"><b>Sorteo ${d[0]}</b>${fecha(d[1])}</div>${balls(d[2])}</div>`).join('<div style="height:10px"></div>');
+  const years = Number(b[1].slice(0, 4)) - Number(a[1].slice(0, 4));
+  $('twinsay').innerHTML = `Los mismos seis números. Entre los dos sorteos pasaron ${years} años y ${fmt(b[0] - a[0] - 1)} sorteos más. En ningún otro par de los ${fmt(draws.length)} sorteos se repitieron los seis.`;
+  $('p1').textContent = `1 entre ${fmt(M.comb(M.poolOf(pools, b[0]), 6))}`;
+} else {
+  $('kicker').nextElementSibling.textContent = 'Ninguna combinación ganadora se ha repetido.';
+}
+const e = M.expectedRepeats(draws, pools);
+$('ndraws').textContent = fmt(draws.length);
+$('npairs').textContent = fmt(draws.length * (draws.length - 1) / 2);
+$('pany').textContent = `${pct(1 - Math.exp(-e), 0)} de probabilidad`;
+$('why').onclick = () => { const h = $('whybox').hidden = !$('whybox').hidden; $('why').setAttribute('aria-expanded', String(!h)); };
+
+// 2. strategies
+const LABELS = { calientes: 'Los 6 más calientes', calientes50: 'Calientes de los últimos 50', frios: 'Los 6 más fríos («ya les toca»)', repetir: 'Repetir el último sorteo', seguidos: '1-2-3-4-5-6' };
+const results = Object.fromEntries(Object.entries(M.STRATEGIES).map(([k, f]) => [k, M.replay(draws, pools, f)]));
+const azar = (() => { let s = 7; const rnd = () => (s = (s * 1103515245 + 12345) % 2147483648) / 2147483648;
+  return M.replay(draws, pools, (h, n) => { const p = []; while (p.length < 6) { const x = 1 + Math.floor(rnd() * n); if (!p.includes(x)) p.push(x); } return p; }); })();
+function showStrat(k) {
+  document.querySelectorAll('#strats button').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.k === k)));
+  const r = results[k], max = Math.max(r.mean, azar.mean, r.expected) * 1.15;
+  $('stratout').innerHTML = `<p><b>${LABELS[k]}</b>, jugado en ${fmt(r.tot)} sorteos:</p>
+    <div class="bars">
+      <span>Esta estrategia</span><div class="bar"><i style="width:${100 * r.mean / max}%"></i></div><b>${r.mean.toFixed(2)}</b>
+      <span>Seis al azar</span><div class="bar ref"><i style="width:${100 * azar.mean / max}%"></i></div><b>${azar.mean.toFixed(2)}</b>
+      <span>Lo que dice la teoría</span><div class="bar ref"><i style="width:${100 * r.expected / max}%"></i></div><b>${r.expected.toFixed(2)}</b>
+    </div>
+    <p class="mute">Aciertos promedio por boleto. Con 3 o más aciertos: ${pct(r.three, 2)} de las veces (al azar, ${pct(azar.three, 2)}). Seis aciertos: ${r.hits[6]}.</p>
+    <p>Da lo mismo. Las esferas no recuerdan qué salió antes.</p>`;
+}
+$('strats').innerHTML = Object.keys(LABELS).map((k) => `<button data-k="${k}" aria-pressed="false">${LABELS[k]}</button>`).join('');
+$('strats').onclick = (ev) => { const k = ev.target.dataset && ev.target.dataset.k; if (k) showStrat(k); };
+showStrat('calientes');
+
+// 3. your ticket
+const pick = [];
+$('grid').innerHTML = Array.from({ length: N }, (_, i) => `<button data-n="${i + 1}" aria-pressed="false">${i + 1}</button>`).join('');
+function renderMine() {
+  document.querySelectorAll('#grid button').forEach((b) => b.setAttribute('aria-pressed', String(pick.includes(+b.dataset.n))));
+  if (pick.length < 6) { $('mine').innerHTML = `<p class="mute">Faltan ${6 - pick.length} número${6 - pick.length === 1 ? '' : 's'}.</p>`; return; }
+  const six = [...pick].sort((a, b) => a - b), r = M.myTicket(draws, pools, six), d = r.best.draw;
+  const three = r.hits[3] + r.hits[4] + r.hits[5] + r.hits[6];
+  $('mine').innerHTML = `${balls(six)}
+    <p>Jugado en ${fmt(r.tot)} sorteos${r.tot < draws.length ? ` (los que ya tenían el ${Math.max(...six)} en la urna)` : ''}:</p>
+    <p>Seis aciertos: <b>${r.hits[6]}</b> · cinco: <b>${r.hits[5]}</b> · cuatro: <b>${r.hits[4]}</b> · tres: <b>${r.hits[3]}</b> · ninguno: <b>${fmt(r.hits[0])}</b></p>
+    <p>Tu mejor sorteo fue el <b>${d[0]}</b> (${fecha(d[1])}), con ${r.best.k} acierto${r.best.k === 1 ? '' : 's'}:</p>${balls(d[2], six)}
+    <p class="mute">Tres o más en ${pct(three / r.tot, 2)} de los sorteos. Cualquier boleto ronda lo mismo.</p>`;
+}
+$('grid').onclick = (ev) => { const n = +(ev.target.dataset && ev.target.dataset.n); if (!n) return;
+  const i = pick.indexOf(n); if (i >= 0) pick.splice(i, 1); else if (pick.length < 6) pick.push(n); renderMine(); };
+$('clear').onclick = () => { pick.length = 0; renderMine(); };
+$('lucky').onclick = () => { pick.length = 0; while (pick.length < 6) { const x = 1 + Math.floor(Math.random() * N); if (!pick.includes(x)) pick.push(x); } renderMine(); };
+
+// 4. consecutive numbers
+const modern = draws.filter((d) => d[0] >= pools[pools.length - 1][0]);
+const withC = modern.filter((d) => M.hasConsecutive(d[2]));
+const last = withC[withC.length - 1];
+$('consec').innerHTML = `<p class="big">${pct(withC.length / modern.length, 0)}</p>
+  <p>de los sorteos desde 2007 traen al menos dos números seguidos, como 22 y 23 (la teoría dice ${pct(M.pConsecutive(N), 0)}).
+  Casi uno de cada dos. Un boleto con dos números seguidos parece «demasiado ordenado», y sin embargo así sale el Melate casi la mitad de las veces.</p>
+  <p class="mute">El más reciente: sorteo ${last[0]}, ${fecha(last[1])}.</p>${balls(last[2])}`;
+
+$('src').href = source;
+$('span').textContent = `${fmt(draws.length)} sorteos, del ${fecha(draws[0][1])} al ${fecha(draws[draws.length - 1][1])}`;
+</script>
+</body>
+</html>
