@@ -4,11 +4,11 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>¿Ya salió? · Todos los sorteos del Melate desde 1984</title>
-<meta name="description" content="El mismo boleto ganó el Melate dos veces, con 41 años de diferencia. Y los números calientes no sirven: lo comprobamos con los 4,286 sorteos.">
+<meta name="description" content="El mismo boleto ganó el Melate dos veces, con 41 años de diferencia. Y los números calientes no sirven: lo comprobamos con todos los sorteos. Y lo que vale de verdad tu boleto hoy.">
 <meta property="og:type" content="website">
 <meta property="og:url" content="https://matmat202.github.io/ya-salio/">
 <meta property="og:title" content="¿Ya salió?">
-<meta property="og:description" content="El mismo boleto ganó el Melate dos veces, con 41 años de diferencia. Prueba tus números en los 4,286 sorteos desde 1984.">
+<meta property="og:description" content="El mismo boleto ganó el Melate dos veces, con 41 años de diferencia. Prueba tus números en todos los sorteos desde 1984.">
 <meta property="og:image" content="https://matmat202.github.io/ya-salio/icons/card.png">
 <meta property="og:image:width" content="1200">
 <meta property="og:image:height" content="630">
@@ -40,6 +40,12 @@
   .bar { height:14px; border-radius:7px; background:var(--line); position:relative; overflow:hidden; }
   .bar i { position:absolute; inset:0 auto 0 0; background:var(--ball); border-radius:7px; }
   .bar.ref i { background:var(--mute); }
+  .chart { width:100%; height:auto; display:block; margin:8px 0 2px; }
+  .chart .s { fill:none; stroke:var(--ball); stroke-width:1.5; }
+  .chart .be { stroke:var(--ink); stroke-dasharray:5 4; stroke-width:1; }
+  .chart { height:150px; }
+  .axis { position:relative; height:1.3em; font-size:.78rem; white-space:nowrap; color:var(--mute); }
+  .axis span { position:absolute; top:0; }
   .grid { display:grid; grid-template-columns: repeat(8, 1fr); gap:5px; max-width: 420px; }
   .grid button { padding:0; height:38px; border-radius:50%; font-variant-numeric: tabular-nums; }
   .grid button[aria-pressed="true"] { background:var(--ball); border-color:var(--ball); color:#fff; }
@@ -79,6 +85,9 @@
   <div class="grid" id="grid"></div>
   <div class="row"><button id="clear">Borrar</button> <button id="lucky">Seis al azar</button></div>
   <div class="card" id="mine"><p class="mute">Faltan 6 números.</p></div>
+
+  <h2>¿Cuánto vale tu boleto hoy?</h2>
+  <div class="card" id="bolsa"></div>
 
   <h2>Lo que «no parece al azar»</h2>
   <div class="card" id="consec"></div>
@@ -167,6 +176,39 @@ $('consec').innerHTML = `<p class="big">${pct(withC.length / modern.length, 0)}<
   <p>de los sorteos desde 2007 traen al menos dos números seguidos, como 22 y 23 (la teoría dice ${pct(M.pConsecutive(N), 0)}).
   Casi uno de cada dos. Un boleto con dos números seguidos parece «demasiado ordenado», y sin embargo así sale el Melate casi la mitad de las veces.</p>
   <p class="mute">El más reciente: sorteo ${last[0]}, ${fecha(last[1])}.</p>${balls(last[2])}`;
+
+// 5. what today's ticket is worth: the jackpot only. $15 is Melate alone (Revancha +$10 and
+// Revanchita +$5 are separate draws), per loterianacional.gob.mx/Melate/Melate, 2026-11-05.
+const PRECIO = 15;
+const B = M.bolsa(draws, pools, PRECIO);
+const mill = (x) => `$${(x / 1e6).toLocaleString('es-MX', { maximumFractionDigits: 1 })} millones`;
+const peso = (x) => `$${x.toLocaleString('es-MX', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+const YEAR = (r) => r[0][1].slice(0, 4);
+const runsTxt = B.runs.map((r) => `${r.length} sorteo${r.length === 1 ? '' : 's'} en ${YEAR(r)}`);
+const chart = (() => {
+  const W = 640, H = 170, top = Math.max(B.peak[3], B.breakEven) * 1.08, n = B.series.length;
+  const x = (i) => (i / (n - 1)) * W, y = (v) => H - (v / top) * H;
+  const pts = B.series.map(([, v], i) => `${x(i).toFixed(1)},${y(v).toFixed(1)}`).join(' ');
+  // year labels in HTML, not SVG text, so they stay readable when the chart shrinks to a phone
+  const at = (k) => 100 * B.series.findIndex(([d]) => d >= k) / (n - 1);
+  const ticks = [[2088, 'left:0'], ...B.runs.map((r) => [r[0][0], null]), [B.last[0], 'right:0']].map(([k, pos]) => {
+    const d = draws.find((e) => e[0] === k); return `<span style="${pos || `left:${at(k).toFixed(1)}%;transform:translateX(-50%)`}">${d[1].slice(0, 4)}</span>`; }).join('');
+  return `<p class="mute">Línea punteada: ${mill(B.breakEven)}, donde el premio mayor pagaría el boleto.</p>
+    <svg class="chart" viewBox="0 0 ${W} ${H}" preserveAspectRatio="none" role="img" aria-label="La bolsa del Melate en cada sorteo desde 2007; pasó la línea en ${B.runs.map(YEAR).join(', ')}">
+    <line class="be" x1="0" x2="${W}" y1="${y(B.breakEven)}" y2="${y(B.breakEven)}" vector-effect="non-scaling-stroke"/>
+    <polyline class="s" points="${pts}" vector-effect="non-scaling-stroke"/></svg><div class="axis">${ticks}</div>`;
+})();
+$('bolsa').innerHTML = `<p>La bolsa del sorteo <b>${B.last[0]}</b> (${fecha(B.last[1])}) fue de <b>${mill(B.last[3])}</b>.
+  Con una probabilidad de 1 entre ${fmt(B.odds)}, cada boleto de $${PRECIO} trae, en promedio:</p>
+  <p class="big">${peso(B.perTicket)}</p>
+  <p>de premio mayor. Para que el premio mayor solo valiera los $${PRECIO}, la bolsa tendría que llegar a <b>${mill(B.breakEven)}</b>.
+  Desde 2007 ha pasado ${B.runs.length === 1 ? 'una vez' : `${B.runs.length} veces`}: ${runsTxt.join(', ')}, con un máximo de ${mill(B.peak[3])} en el sorteo ${B.peak[0]} (${fecha(B.peak[1])}).</p>
+  ${chart}
+  <p>Cada sorteo sin ganador la bolsa sube unos ${mill(B.medianRise)}, y cuando alguien acierta los seis vuelve a ${mill(Math.min(...B.resets.map((d) => d[3])))}.
+  Eso ha pasado ${B.resets.length} veces desde 2007: un ganador cada ${Math.round(B.everyDraws)} sorteos, más o menos.
+  ${B.sinceReset != null ? `El último fue hace ${B.sinceReset} sorteo${B.sinceReset === 1 ? '' : 's'}.` : ''}</p>
+  <p class="mute">Solo el premio mayor: los premios por 2 a 5 aciertos suman algo más, pero no vienen en el histórico oficial.
+  Y aun arriba de la línea no es negocio: el premio paga impuestos, y si otro boleto también acierta, se reparte.</p>`;
 
 $('src').href = source;
 $('span').textContent = `${fmt(draws.length)} sorteos, del ${fecha(draws[0][1])} al ${fecha(draws[draws.length - 1][1])}`;

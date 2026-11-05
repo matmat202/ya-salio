@@ -68,6 +68,27 @@
   const hasConsecutive = (six) => six.some((x, i) => i && x - six[i - 1] === 1);
   const pConsecutive = (N) => 1 - comb(N - 5, 6) / comb(N, 6);
 
-  const api = { comb, poolOf, repeats, expectedRepeats, replay, STRATEGIES, myTicket, hasConsecutive, pConsecutive, freq, sameBall };
+  // The jackpot in the current urn: what it puts into one ticket, the size at which the jackpot
+  // alone would repay the ticket, and how often it restarted (fell from one draw to the next,
+  // i.e. someone hit six). Draws with no recorded bolsa are skipped, not read as zero.
+  function bolsa(draws, pools, price) {
+    const [first, N] = pools[pools.length - 1], odds = comb(N, 6), breakEven = price * odds;
+    const m = draws.filter((d) => d[0] >= first && d[3]);
+    const last = m[m.length - 1], above = m.filter((d) => d[3] >= breakEven);
+    const peak = m.reduce((a, d) => (d[3] > a[3] ? d : a), m[0]);
+    const resets = [], rises = [];
+    for (let i = 1; i < m.length; i++) {
+      if (m[i][3] < m[i - 1][3]) resets.push(m[i]); else if (m[i][3] > m[i - 1][3]) rises.push(m[i][3] - m[i - 1][3]);
+    }
+    rises.sort((a, b) => a - b);
+    const runs = [];   // consecutive draws above break-even
+    for (const d of above) { const r = runs[runs.length - 1]; if (r && d[0] === r[r.length - 1][0] + 1) r.push(d); else runs.push([d]); }
+    const lastReset = resets[resets.length - 1];
+    return { N, odds, price, breakEven, last, perTicket: last[3] / odds, above, runs, peak, resets,
+             everyDraws: m.length / resets.length, sinceReset: lastReset ? last[0] - lastReset[0] : null,
+             medianRise: rises[Math.floor(rises.length / 2)], series: m.map((d) => [d[0], d[3]]) };
+  }
+
+  const api = { bolsa, comb, poolOf, repeats, expectedRepeats, replay, STRATEGIES, myTicket, hasConsecutive, pConsecutive, freq, sameBall };
   if (typeof module !== 'undefined') module.exports = api; else root.Melate = api;
 })(this);
