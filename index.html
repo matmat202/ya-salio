@@ -209,6 +209,26 @@ $('bolsa').innerHTML = `<p>La bolsa del sorteo <b>${B.last[0]}</b> (${fecha(B.la
   ${B.sinceReset != null ? `El último fue hace ${B.sinceReset} sorteo${B.sinceReset === 1 ? '' : 's'}.` : ''}</p>
   <p class="mute">Solo el premio mayor: los premios por 2 a 5 aciertos suman algo más, pero no vienen en el histórico oficial.
   Y aun arriba de la línea no es negocio: el premio paga impuestos, y si otro boleto también acierta, se reparte.</p>`;
+document.querySelectorAll('#bolsa .axis').forEach(declutter);
+// Axis labels sit at absolute positions, so a wider font (1.5x text, WCAG 1.4.12 spacing)
+// pushes neighbours into each other: text-spacing caught '150 h' over '175 h', '9+10 Mar'
+// over 'all' and '2013' over '2015' on 2026-11-06. Keep both ends, hide a middle label only
+// while it would collide, and re-check whenever a label or the axis changes size.
+function declutter(box) {
+  const go = () => {
+    const s = [...box.children]; if (s.length < 3) return;
+    s.forEach((e) => { e.style.visibility = ''; });
+    const last = s[s.length - 1].getBoundingClientRect();
+    let prev = s[0].getBoundingClientRect();
+    for (const e of s.slice(1, -1)) {
+      const b = e.getBoundingClientRect();
+      if (!b.width) continue;
+      if (b.left < prev.right + 4 || b.right > last.left - 4) e.style.visibility = 'hidden'; else prev = b;
+    }
+  };
+  const ro = new ResizeObserver(go); ro.observe(box); [...box.children].forEach((e) => ro.observe(e));
+  go();
+}
 
 $('src').href = source;
 $('span').textContent = `${fmt(draws.length)} sorteos, del ${fecha(draws[0][1])} al ${fecha(draws[draws.length - 1][1])}`;
