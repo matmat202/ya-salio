@@ -52,10 +52,14 @@
   footer { margin-top:3em; font-size:.85rem; color:var(--mute); }
   footer p { max-width:65ch; }
   a { color: inherit; }
+  #latest { margin-top:0; }
+  #latest .draw .when { min-width: 0; }
+  #latest .warn { color:var(--ball); font-weight:600; }
 </style>
 </head>
 <body>
 <main>
+  <div class="card" id="latest"></div>
   <p class="mute" id="kicker">Melate · todos los sorteos desde 1984</p>
   <h1>El mismo boleto ganó dos veces, con 41 años de diferencia.</h1>
   <div class="card" id="twins"></div>
@@ -112,6 +116,19 @@ const fmt = (x) => Math.round(x).toLocaleString('es-MX');
 const pct = (x, d = 1) => (100 * x).toLocaleString('es-MX', { minimumFractionDigits: d, maximumFractionDigits: d }) + '%';
 const balls = (six, on) => `<div class="balls">${six.map((x) => `<span class="b${on && !on.includes(x) ? ' off' : ''}">${x}</span>`).join('')}</div>`;
 
+// 0. ¿ya salió?: the newest draw this page holds, and whether it can be the newest there is
+const DIAS = ['domingo','lunes','martes','miércoles','jueves','viernes','sábado'];
+const dia = (iso) => DIAS[new Date(iso + 'T00:00:00Z').getUTCDay()];
+const newest = draws[draws.length - 1];
+// ?hoy=AAAA-MM-DD pretends today is that date (the render gate uses it to see the late notice)
+const hoyQ = new URLSearchParams(location.search).get('hoy');
+const hoy = (/^\d{4}-\d\d-\d\d$/.test(hoyQ || '') && hoyQ) || new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Mexico_City' }).format(new Date());
+const S = M.schedule(newest[1], hoy);
+const OFICIAL = 'https://www.loterianacional.gob.mx/Melate/Resultados';
+$('latest').innerHTML = `<div class="draw"><div class="when"><b>Último sorteo: ${newest[0]}</b>${dia(newest[1])} ${fecha(newest[1])}</div>${balls(newest[2])}</div>
+  ${S.missed.length ? `<p class="warn">Esta página va atrasada: después de este hubo ${S.missed.length === 1 ? 'otro sorteo' : `${S.missed.length} sorteos más`}
+    (${S.missed.map((d) => `${dia(d)} ${Number(d.slice(8))}`).join(', ')}). El resultado más nuevo está en <a href="${OFICIAL}">la Lotería Nacional</a>.</p>` : ''}
+  <p class="mute">Próximo sorteo: ${S.next === hoy ? 'hoy' : dia(S.next)} ${fecha(S.next)}, a las 9 de la noche (hora del centro).</p>`;
 // 1. the twins
 const reps = M.repeats(draws);
 if (reps.length) {
@@ -162,6 +179,7 @@ function renderMine() {
     <p>Jugado en ${fmt(r.tot)} sorteos${r.tot < draws.length ? ` (los que ya tenían el ${Math.max(...six)} en la urna)` : ''}:</p>
     <p>Seis aciertos: <b>${r.hits[6]}</b> · cinco: <b>${r.hits[5]}</b> · cuatro: <b>${r.hits[4]}</b> · tres: <b>${r.hits[3]}</b> · ninguno: <b>${fmt(r.hits[0])}</b></p>
     <p>Tu mejor sorteo fue el <b>${d[0]}</b> (${fecha(d[1])}), con ${r.best.k} acierto${r.best.k === 1 ? '' : 's'}:</p>${balls(d[2], six)}
+    <p>En el último sorteo (${newest[0]}, ${fecha(newest[1])}): <b>${six.filter((x) => newest[2].includes(x)).length}</b> de 6.</p>
     <p class="mute">Tres o más en ${pct(three / r.tot, 2)} de los sorteos. Cualquier boleto ronda lo mismo.</p>`;
 }
 $('grid').onclick = (ev) => { const n = +(ev.target.dataset && ev.target.dataset.n); if (!n) return;

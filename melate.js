@@ -89,6 +89,20 @@
              medianRise: rises[Math.floor(rises.length / 2)], series: m.map((d) => [d[0], d[3]]) };
   }
 
-  const api = { bolsa, comb, poolOf, repeats, expectedRepeats, replay, STRATEGIES, myTicket, hasConsecutive, pConsecutive, freq, sameBall };
+  // Melate is drawn Wednesday, Friday and Sunday at 21:00, Mexico City (no gap in the CSV since
+  // mid-2021). Given the newest draw this page holds and today's date there, list the draw days
+  // since that the page cannot know about (today's is not one: it has not been drawn yet, or its
+  // result is hours old), and the next draw day from today on. Dates are ISO strings, read as UTC.
+  const DRAW_DAYS = [0, 3, 5];
+  function schedule(lastIso, todayIso) {
+    const t = new Date(lastIso + 'T00:00:00Z'), today = new Date(todayIso + 'T00:00:00Z'), iso = () => t.toISOString().slice(0, 10);
+    const missed = [];
+    for (t.setUTCDate(t.getUTCDate() + 1); t < today; t.setUTCDate(t.getUTCDate() + 1)) if (DRAW_DAYS.includes(t.getUTCDay())) missed.push(iso());
+    if (t < today) t.setTime(today.getTime());
+    while (!DRAW_DAYS.includes(t.getUTCDay())) t.setUTCDate(t.getUTCDate() + 1);
+    return { missed, next: iso() };
+  }
+
+  const api = { schedule, bolsa, comb, poolOf, repeats, expectedRepeats, replay, STRATEGIES, myTicket, hasConsecutive, pConsecutive, freq, sameBall };
   if (typeof module !== 'undefined') module.exports = api; else root.Melate = api;
 })(this);
