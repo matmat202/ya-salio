@@ -103,6 +103,16 @@
     return { missed, next: iso() };
   }
 
-  const api = { schedule, bolsa, comb, poolOf, repeats, expectedRepeats, replay, STRATEGIES, myTicket, hasConsecutive, pConsecutive, freq, sameBall };
+  // A saved or shared ticket ("8-12-15-18-20-34", from the URL hash or localStorage): six
+  // distinct whole numbers in 1..n, sorted, or null. Anything else is ignored, never half-used.
+  function parseTicket(str, n) {
+    const parts = String(str || '').split(/[^0-9]+/).filter(Boolean);
+    if (parts.length !== 6) return null;
+    const six = parts.map(Number).sort((a, b) => a - b);
+    if (six.some((x, i) => !Number.isInteger(x) || x < 1 || x > n || six[i - 1] === x)) return null;
+    return six;
+  }
+
+  const api = { parseTicket, schedule, bolsa, comb, poolOf, repeats, expectedRepeats, replay, STRATEGIES, myTicket, hasConsecutive, pConsecutive, freq, sameBall };
   if (typeof module !== 'undefined') module.exports = api; else root.Melate = api;
 })(this);

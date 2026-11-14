@@ -16,8 +16,8 @@
 <meta name="twitter:card" content="summary_large_image">
 <link rel="apple-touch-icon" href="icons/icon-180.png">
 <style>
-  :root { --bg:#fbf8f2; --ink:#1d1b18; --mute:#6b655c; --line:#e3ddd2; --ball:#c8102e; --ok:#1f7a4d; --card:#fff; }
-  @media (prefers-color-scheme: dark) { :root { --bg:#16140f; --ink:#f1ece2; --mute:#a59d90; --line:#3a352c; --card:#211e18; --ball:#d63a52; --ok:#4fbf86; } }
+  :root { --bg:#fbf8f2; --ink:#1d1b18; --mute:#6b655c; --line:#e3ddd2; --ball:#c8102e; --ok:#1f7a4d; --card:#fff; --warn:#c8102e; }
+  @media (prefers-color-scheme: dark) { :root { --bg:#16140f; --ink:#f1ece2; --mute:#a59d90; --line:#3a352c; --card:#211e18; --ball:#d63a52; --ok:#4fbf86; --warn:#f07a8c; } }
   * { box-sizing: border-box; }
   body { margin:0; background:var(--bg); color:var(--ink); font:17px/1.5 system-ui, -apple-system, "Segoe UI", sans-serif; }
   main { max-width: 680px; margin: 0 auto; padding: 24px 18px 60px; }
@@ -54,7 +54,9 @@
   a { color: inherit; }
   #latest { margin-top:0; }
   #latest .draw .when { min-width: 0; }
-  #latest .warn { color:var(--ball); font-weight:600; }
+  #latest .warn { color:var(--warn); font-weight:600; }
+  #latestmine .draw { margin-top:10px; padding-top:10px; border-top:1px solid var(--line); }
+  #latestmine .b { width:32px; height:32px; font-size:.9rem; }
 </style>
 </head>
 <body>
@@ -128,6 +130,7 @@ const OFICIAL = 'https://www.loterianacional.gob.mx/Melate/Resultados';
 $('latest').innerHTML = `<div class="draw"><div class="when"><b>Último sorteo: ${newest[0]}</b>${dia(newest[1])} ${fecha(newest[1])}</div>${balls(newest[2])}</div>
   ${S.missed.length ? `<p class="warn">Esta página va atrasada: después de este hubo ${S.missed.length === 1 ? 'otro sorteo' : `${S.missed.length} sorteos más`}
     (${S.missed.map((d) => `${dia(d)} ${Number(d.slice(8))}`).join(', ')}). El resultado más nuevo está en <a href="${OFICIAL}">la Lotería Nacional</a>.</p>` : ''}
+  <div id="latestmine"></div>
   <p class="mute">Próximo sorteo: ${S.next === hoy ? 'hoy' : dia(S.next)} ${fecha(S.next)}, a las 9 de la noche (hora del centro).</p>`;
 // 1. the twins
 const reps = M.repeats(draws);
@@ -167,25 +170,58 @@ $('strats').innerHTML = Object.keys(LABELS).map((k) => `<button data-k="${k}" ar
 $('strats').onclick = (ev) => { const k = ev.target.dataset && ev.target.dataset.k; if (k) showStrat(k); };
 showStrat('calientes');
 
-// 3. your ticket
-const pick = [];
+// 3. your ticket. A full six is kept on this phone (localStorage) and in the address
+// (#boleto=8-12-15-18-20-34), so a reload, a bookmark or a link sent to the family brings it
+// back, and the card at the top says how it did in the newest draw. Only a tap saves: opening
+// someone else's link shows their six without replacing the ones kept on this phone.
+const KEY = 'yasalio.boleto';
+const store = { get() { try { return localStorage.getItem(KEY); } catch (e) { return null; } },
+  set(v) { try { if (v) localStorage.setItem(KEY, v); else localStorage.removeItem(KEY); } catch (e) {} } };
+const fromHash = M.parseTicket((location.hash.match(/boleto=([0-9,-]+)/) || [])[1], N);
+const pick = fromHash || M.parseTicket(store.get(), N) || [];
+let tapped = false;
+function remember(six) {
+  const v = six ? six.join('-') : '';
+  if (six && tapped) store.set(v);
+  if (six || /boleto=/.test(location.hash)) history.replaceState(null, '', location.pathname + location.search + (six ? '#boleto=' + v : ''));
+  $('latestmine').innerHTML = six ? `<div class="draw"><div class="when"><b>Tus números: ${six.filter((x) => newest[2].includes(x)).length} de 6 en este sorteo</b>
+    <a href="#mine" onclick="document.getElementById('mine').scrollIntoView({ behavior: 'smooth' }); return false">ver en todos los sorteos</a></div>${balls(six, newest[2])}</div>` : '';
+}
 $('grid').innerHTML = Array.from({ length: N }, (_, i) => `<button data-n="${i + 1}" aria-pressed="false">${i + 1}</button>`).join('');
 function renderMine() {
   document.querySelectorAll('#grid button').forEach((b) => b.setAttribute('aria-pressed', String(pick.includes(+b.dataset.n))));
-  if (pick.length < 6) { $('mine').innerHTML = `<p class="mute">Faltan ${6 - pick.length} número${6 - pick.length === 1 ? '' : 's'}.</p>`; return; }
+  if (pick.length < 6) { remember(null); $('mine').innerHTML = `<p class="mute">Faltan ${6 - pick.length} número${6 - pick.length === 1 ? '' : 's'}.</p>`; return; }
   const six = [...pick].sort((a, b) => a - b), r = M.myTicket(draws, pools, six), d = r.best.draw;
+  remember(six);
   const three = r.hits[3] + r.hits[4] + r.hits[5] + r.hits[6];
   $('mine').innerHTML = `${balls(six)}
     <p>Jugado en ${fmt(r.tot)} sorteos${r.tot < draws.length ? ` (los que ya tenían el ${Math.max(...six)} en la urna)` : ''}:</p>
     <p>Seis aciertos: <b>${r.hits[6]}</b> · cinco: <b>${r.hits[5]}</b> · cuatro: <b>${r.hits[4]}</b> · tres: <b>${r.hits[3]}</b> · ninguno: <b>${fmt(r.hits[0])}</b></p>
     <p>Tu mejor sorteo fue el <b>${d[0]}</b> (${fecha(d[1])}), con ${r.best.k} acierto${r.best.k === 1 ? '' : 's'}:</p>${balls(d[2], six)}
     <p>En el último sorteo (${newest[0]}, ${fecha(newest[1])}): <b>${six.filter((x) => newest[2].includes(x)).length}</b> de 6.</p>
-    <p class="mute">Tres o más en ${pct(three / r.tot, 2)} de los sorteos. Cualquier boleto ronda lo mismo.</p>`;
+    <p class="mute">Tres o más en ${pct(three / r.tot, 2)} de los sorteos. Cualquier boleto ronda lo mismo.</p>
+    <div class="row"><button id="share">Compartir mis números</button></div>
+    <p class="mute" id="sharesay">${tapped || !fromHash ? 'Tus números se quedan guardados en este teléfono: la próxima vez que entres, arriba verás cómo les fue en el último sorteo.'
+      : 'Son los números del enlace que te mandaron. Toca los tuyos para guardarlos en este teléfono.'}</p>`;
 }
-$('grid').onclick = (ev) => { const n = +(ev.target.dataset && ev.target.dataset.n); if (!n) return;
+$('mine').onclick = async (ev) => {
+  if (ev.target.id !== 'share') return;
+  const url = location.href, say = $('sharesay');
+  try {
+    if (navigator.share) await navigator.share({ title: '¿Ya salió?', text: 'Mis números del Melate en todos los sorteos desde 1984', url });
+    else { await navigator.clipboard.writeText(url); say.textContent = 'Enlace copiado: quien lo abra verá estos mismos seis números.'; }
+  } catch (e) { if (e.name !== 'AbortError') say.textContent = `Copia este enlace: ${url}`; }
+};
+$('grid').onclick = (ev) => { const n = +(ev.target.dataset && ev.target.dataset.n); if (!n) return; tapped = true;
   const i = pick.indexOf(n); if (i >= 0) pick.splice(i, 1); else if (pick.length < 6) pick.push(n); renderMine(); };
-$('clear').onclick = () => { pick.length = 0; renderMine(); };
-$('lucky').onclick = () => { pick.length = 0; while (pick.length < 6) { const x = 1 + Math.floor(Math.random() * N); if (!pick.includes(x)) pick.push(x); } renderMine(); };
+$('clear').onclick = () => { pick.length = 0; store.set(null); renderMine(); };
+$('lucky').onclick = () => { tapped = true; pick.length = 0; while (pick.length < 6) { const x = 1 + Math.floor(Math.random() * N); if (!pick.includes(x)) pick.push(x); } renderMine(); };
+renderMine();
+// a shared link opened in a tab already on this page changes only the hash: no reload happens
+addEventListener('hashchange', () => {
+  const six = M.parseTicket((location.hash.match(/boleto=([0-9,-]+)/) || [])[1], N);
+  if (six && six.join('-') !== [...pick].sort((a, b) => a - b).join('-')) { tapped = false; pick.splice(0, pick.length, ...six); renderMine(); }
+});
 
 // 4. consecutive numbers
 const modern = draws.filter((d) => d[0] >= pools[pools.length - 1][0]);
