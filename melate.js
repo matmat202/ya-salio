@@ -71,6 +71,10 @@
   // The jackpot in the current urn: what it puts into one ticket, the size at which the jackpot
   // alone would repay the ticket, and how often it restarted (fell from one draw to the next,
   // i.e. someone hit six). Draws with no recorded bolsa are skipped, not read as zero.
+  // A row's BOLSA is the jackpot announced for the NEXT draw: row 2677 says $639.5M and draw
+  // 2678 paid 639.500.000,00; row 3680 says $505.4M and draw 3681 paid 505.842.255,65
+  // (loterianacional.com results, checked 2026-11-16). So `next` and `peakDraw` name the draw
+  // that played for it; a reset row is the winning draw itself.
   function bolsa(draws, pools, price) {
     const [first, N] = pools[pools.length - 1], odds = comb(N, 6), breakEven = price * odds;
     const m = draws.filter((d) => d[0] >= first && d[3]);
@@ -84,7 +88,7 @@
     const runs = [];   // consecutive draws above break-even
     for (const d of above) { const r = runs[runs.length - 1]; if (r && d[0] === r[r.length - 1][0] + 1) r.push(d); else runs.push([d]); }
     const lastReset = resets[resets.length - 1];
-    return { N, odds, price, breakEven, last, perTicket: last[3] / odds, above, runs, peak, resets,
+    return { N, odds, price, breakEven, last, next: last[0] + 1, peakDraw: peak[0] + 1, perTicket: last[3] / odds, above, runs, peak, resets,
              everyDraws: m.length / resets.length, sinceReset: lastReset ? last[0] - lastReset[0] : null,
              medianRise: rises[Math.floor(rises.length / 2)], series: m.map((d) => [d[0], d[3]]) };
   }

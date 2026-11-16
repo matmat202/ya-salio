@@ -253,17 +253,18 @@ const chart = (() => {
     <line class="be" x1="0" x2="${W}" y1="${y(B.breakEven)}" y2="${y(B.breakEven)}" vector-effect="non-scaling-stroke"/>
     <polyline class="s" points="${pts}" vector-effect="non-scaling-stroke"/></svg><div class="axis">${ticks}</div>`;
 })();
-$('bolsa').innerHTML = `<p>La bolsa del sorteo <b>${B.last[0]}</b> (${fecha(B.last[1])}) fue de <b>${mill(B.last[3])}</b>.
+$('bolsa').innerHTML = `<p>La bolsa del sorteo <b>${B.next}</b>, el que sigue al del ${fecha(B.last[1])}, es de <b>${mill(B.last[3])}</b>.
   Con una probabilidad de 1 entre ${fmt(B.odds)}, cada boleto de $${PRECIO} trae, en promedio:</p>
   <p class="big">${peso(B.perTicket)}</p>
   <p>de premio mayor. Para que el premio mayor solo valiera los $${PRECIO}, la bolsa tendría que llegar a <b>${mill(B.breakEven)}</b>.
-  Desde 2007 ha pasado ${B.runs.length === 1 ? 'una vez' : `${B.runs.length} veces`}: ${runsTxt.join(', ')}, con un máximo de ${mill(B.peak[3])} en el sorteo ${B.peak[0]} (${fecha(B.peak[1])}).</p>
+  Desde 2007 ha pasado ${B.runs.length === 1 ? 'una vez' : `${B.runs.length} veces`}: ${runsTxt.join(', ')}, con un máximo de ${mill(B.peak[3])} en el sorteo ${B.peakDraw}${(d => d ? ` (${fecha(d[1])})` : '')(draws.find((d) => d[0] === B.peakDraw))}.</p>
   ${chart}
   <p>Cada sorteo sin ganador la bolsa sube unos ${mill(B.medianRise)}, y cuando alguien acierta los seis vuelve a ${mill(Math.min(...B.resets.map((d) => d[3])))}.
   Eso ha pasado ${B.resets.length} veces desde 2007: un ganador cada ${Math.round(B.everyDraws)} sorteos, más o menos.
   ${B.sinceReset != null ? `El último fue hace ${B.sinceReset} sorteo${B.sinceReset === 1 ? '' : 's'}.` : ''}</p>
   <p class="mute">Solo el premio mayor: los premios por 2 a 5 aciertos suman algo más, pero no vienen en el histórico oficial.
-  Y aun arriba de la línea no es negocio: el premio paga impuestos, y si otro boleto también acierta, se reparte.</p>`;
+  Y aun arriba de la línea no es negocio: el premio paga impuestos, y si otro boleto también acierta, se reparte.</p>
+  <p><a href="story/">¿Sale antes la bolsa grande? La historia, sorteo por sorteo →</a></p>`;
 document.querySelectorAll('#bolsa .axis').forEach(declutter);
 // Axis labels sit at absolute positions, so a wider font (1.5x text, WCAG 1.4.12 spacing)
 // pushes neighbours into each other: text-spacing caught '150 h' over '175 h', '9+10 Mar'

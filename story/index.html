@@ -1,0 +1,79 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Al premio mayor tampoco le toca · ¿Ya salió?</title>
+<meta name="description" content="Una historia de ¿Ya salió?: en cada sorteo del Melate desde finales de 2007, la bolsa grande salió casi igual de seguido que la chica. Que lleve mucho sin salir no la hace salir antes.">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div id="plot" aria-hidden="true"></div>
+<p id="err" role="alert"></p>
+<main>
+
+<section class="step" data-step="saw"><div>
+  <p class="kicker">¿Ya salió? · una historia</p>
+  <h1>Al premio mayor tampoco le toca</h1>
+  <p>Cada punto es un sorteo del Melate desde <b data-fact="first_year"></b>, los <b data-fact="n"></b>
+  con la urna de 56 números: a la derecha, más reciente; arriba, más grande la bolsa.</p>
+  <p>La bolsa sube en cada sorteo sin ganador. Cuando alguien acierta los seis, el punto es rojo
+  y la bolsa vuelve a empezar. Pasó <b data-fact="wins"></b> veces: una cada <b data-fact="every"></b> sorteos, más o menos.</p>
+  <p class="small">Baja ↓</p>
+</div></section>
+
+<section class="step" data-step="record"><div>
+  <p class="kicker">Capítulo 1 · El serrucho</p>
+  <h2>Sube, sube, y se cae</h2>
+  <p>La bolsa más grande fue de <b data-fact="top_b"></b>, en el sorteo <b data-fact="top_k"></b>
+  (<b data-fact="top_f"></b>), y sí salió. La espera más larga fue de <b data-fact="longest"></b> sorteos
+  seguidos sin ganador, hasta el <b data-fact="longest_k"></b> (<b data-fact="longest_f"></b>), que pagó
+  <b data-fact="longest_b"></b>.</p>
+  <p>La mitad de las bolsas ganadas valían más de <b data-fact="median_win_b"></b>. ¿Será que,
+  mientras más crece, más se acerca a salir?</p>
+</div></section>
+
+<section class="step" data-step="stack"><div>
+  <p class="kicker">Capítulo 2 · ¿Le toca?</p>
+  <h2>La grande sale casi igual que la chica</h2>
+  <p>Ahora en tres columnas, según el tamaño de la bolsa de ese sorteo: el tercio con la bolsa más chica,
+  el de en medio y el de la más grande. En los años de tres sorteos por semana, «chica» es menos de
+  <b data-fact="cut_lo"></b> y «grande», <b data-fact="cut_hi"></b> o más.</p>
+  <p>Con bolsa chica, alguien ganó en el <b data-fact="rate_lo"></b> de los sorteos. Con bolsa mediana, en el
+  <b data-fact="rate_mid"></b>. Con bolsa grande, en el <b data-fact="rate_hi"></b>: <span class="w">un poco más</span>,
+  no el doble ni el triple.</p>
+  <p class="small"><span class="k won">alguien acertó los seis</span> <span class="k dim">nadie</span></p>
+</div></section>
+
+<section class="step" data-step="what"><div>
+  <p class="kicker">Capítulo 3 · ¿Lo veríamos?</p>
+  <h2>Ese «poco más» lo hace el azar solo</h2>
+  <p>Revuelve los ganadores entre los sorteos al azar, sin que la bolsa importe: <b data-fact="p100"></b>
+  de cada 100 veces le tocan a la bolsa grande <b data-fact="w_hi"></b> o más. Fue lo que pasó.</p>
+  <p>Y si una bolsa grande de verdad saliera el doble de seguido, aquí se notaría: esperaríamos unos
+  <b data-fact="what"></b> ganadores en la columna grande (los aros azules), no <b data-fact="w_hi"></b>.
+  Con estos sorteos, una diferencia así se vería <b data-fact="power100"></b> de cada 100 veces.</p>
+  <p class="small"><span class="k won">ganó</span> <span class="k what">lo que haría falta si la grande saliera el doble</span></p>
+</div></section>
+
+<section class="step" data-step="due"><div>
+  <p class="kicker">Coda · Lo mismo que los números fríos</p>
+  <h2>Tampoco le toca a la que lleva mucho sin salir</h2>
+  <p>La bolsa grande es, justo, la que lleva más sorteos sin ganador. Que no haya salido en semanas no la
+  acerca a salir: cada sorteo empieza igual, como cada número. Si algo la sube un poco, es que con
+  bolsa grande se venden más boletos, no que ya le toque.</p>
+  <p>Lo mismo pasa con los números «fríos» que «ya les toca»: <a href="../">¿Ya salió?</a> los pone a
+  prueba con todos los sorteos, y deja comparar tus seis números con cada uno desde 1984.</p>
+  <p class="small">Datos: el histórico oficial de Pronósticos para la Asistencia Pública (Melate.csv), urna de 56
+  números (sorteo 2089 en adelante). La bolsa de cada renglón es la del sorteo siguiente (el 2678 pagó los
+  $639.5 millones del renglón 2677, según loterianacional.com); «alguien ganó» quiere decir que la bolsa
+  siguiente bajó. Tres renglones de 2008 y 2009 sin bolsa se omiten. Los tercios se cortan aparte para los años
+  de dos sorteos por semana y los de tres (desde el 26 de noviembre de 2021). «Revuelve» es exacto
+  (hipergeométrico, sin simulación); «se vería» es la probabilidad de que esa cuenta quedara bajo el 5%.
+  Esto no es un sistema para ganar: no hay ninguno.</p>
+</div></section>
+
+</main>
+<script type="module" src="story.js"></script>
+</body>
+</html>
