@@ -107,6 +107,18 @@
     return { missed, next: iso() };
   }
 
+  // What a ticket wins in one draw. Melate pays nine categories: 6 hits; then 5, 4, 3 and 2
+  // hits, each split by whether the ticket also holds the adicional (d[4]). The last four pay a
+  // fixed amount in pesos, the first five a share of that draw's sales. Table and amounts from
+  // loterianacional.com/melate/premios (read 2026-11-16). 1 hit + adicional pays nothing.
+  const PRIZES = [[6, false, null], [5, true, null], [5, false, null], [4, true, null], [4, false, null],
+    [3, true, 161.29], [3, false, 43.01], [2, true, 32.26], [2, false, 26.88]];
+  function prize(six, d) {
+    const k = sameBall(six, d[2]), ad = d[4] != null && six.includes(d[4]);
+    const i = PRIZES.findIndex(([h, a]) => h === k && (a === ad || h === 6));
+    return { k, ad, cat: i < 0 ? 0 : i + 1, amount: i < 0 ? null : PRIZES[i][2] };
+  }
+
   // A saved or shared ticket ("8-12-15-18-20-34", from the URL hash or localStorage): six
   // distinct whole numbers in 1..n, sorted, or null. Anything else is ignored, never half-used.
   function parseTicket(str, n) {
@@ -117,6 +129,6 @@
     return six;
   }
 
-  const api = { parseTicket, schedule, bolsa, comb, poolOf, repeats, expectedRepeats, replay, STRATEGIES, myTicket, hasConsecutive, pConsecutive, freq, sameBall };
+  const api = { prize, PRIZES, parseTicket, schedule, bolsa, comb, poolOf, repeats, expectedRepeats, replay, STRATEGIES, myTicket, hasConsecutive, pConsecutive, freq, sameBall };
   if (typeof module !== 'undefined') module.exports = api; else root.Melate = api;
 })(this);
