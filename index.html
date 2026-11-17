@@ -203,6 +203,14 @@ function prizeSay(six) {
     <p class="mute">Confírmalo con tu boleto en <a href="${OFICIAL}">la Lotería Nacional</a>: aquí solo comparamos los seis que guardaste.</p>`;
 }
 $('grid').innerHTML = Array.from({ length: N }, (_, i) => `<button data-n="${i + 1}" aria-pressed="false">${i + 1}</button>`).join('');
+// Hits alone hide that 2 hits already pays: count the draws where the six would have won any of
+// today's nine categories, beside what a random six expects over the same draws.
+function wonSay(h) {
+  const big = h.won - h.fixed, fx = M.PRIZES.map((p) => p[2]).filter((x) => x != null), lo = pesos(Math.min(...fx)), hi = pesos(Math.max(...fx));
+  return `Con los premios de hoy, habría ganado algo en <b>${fmt(h.won)}</b> sorteos (1 de cada ${(h.tot / h.won).toFixed(1)}); seis al azar, unos ${fmt(Math.round(h.expected))}.
+    ${big ? `${fmt(h.fixed)} de esos fueron premio fijo de 2 o 3 aciertos (hoy, de ${lo} a ${hi}), y ${fmt(big)} de 4 o más.`
+      : `Todos fueron premio fijo de 2 o 3 aciertos: hoy, de ${lo} a ${hi}.`}`;
+}
 function renderMine() {
   document.querySelectorAll('#grid button').forEach((b) => b.setAttribute('aria-pressed', String(pick.includes(+b.dataset.n))));
   if (pick.length < 6) { remember(null); $('mine').innerHTML = `<p class="mute">Faltan ${6 - pick.length} número${6 - pick.length === 1 ? '' : 's'}.</p>`; return; }
@@ -211,7 +219,8 @@ function renderMine() {
   const three = r.hits[3] + r.hits[4] + r.hits[5] + r.hits[6];
   $('mine').innerHTML = `${balls(six)}
     <p>Jugado en ${fmt(r.tot)} sorteos${r.tot < draws.length ? ` (los que ya tenían el ${Math.max(...six)} en la urna)` : ''}:</p>
-    <p>Seis aciertos: <b>${r.hits[6]}</b> · cinco: <b>${r.hits[5]}</b> · cuatro: <b>${r.hits[4]}</b> · tres: <b>${r.hits[3]}</b> · ninguno: <b>${fmt(r.hits[0])}</b></p>
+    <p>Seis aciertos: <b>${r.hits[6]}</b> · cinco: <b>${r.hits[5]}</b> · cuatro: <b>${r.hits[4]}</b> · tres: <b>${r.hits[3]}</b> · dos: <b>${fmt(r.hits[2])}</b> · ninguno: <b>${fmt(r.hits[0])}</b></p>
+    <p id="minewon">${wonSay(M.prizeHistory(draws, pools, six))}</p>
     <p>Tu mejor sorteo fue el <b>${d[0]}</b> (${fecha(d[1])}), con ${r.best.k} acierto${r.best.k === 1 ? '' : 's'}:</p>${balls(d[2], six)}
     <p>En el último sorteo (${newest[0]}, ${fecha(newest[1])}): <b>${six.filter((x) => newest[2].includes(x)).length}</b> de 6.</p>
     <p class="mute">Tres o más en ${pct(three / r.tot, 2)} de los sorteos. Cualquier boleto ronda lo mismo.</p>

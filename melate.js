@@ -119,6 +119,23 @@
     return { k, ad, cat: i < 0 ? 0 : i + 1, amount: i < 0 ? null : PRIZES[i][2] };
   }
 
+  // A fixed ticket under today's nine categories in every draw it could have been played in:
+  // how many draws each category (cat[1..9]; cat[0] = no prize), and how many prizes a ticket
+  // drawn at random would expect over the same draws: P(2+ hits) = 1 - P(0) - P(1) in each urn.
+  // Counts, not pesos: the fixed amounts are today's, and old draws paid in other money.
+  function prizeHistory(draws, pools, six) {
+    const cat = new Array(PRIZES.length + 1).fill(0);
+    let tot = 0, expected = 0;
+    const pAny = (N) => 1 - (comb(N - 6, 6) + 6 * comb(N - 6, 5)) / comb(N, 6);
+    for (const d of draws) {
+      const N = poolOf(pools, d[0]);
+      if (Math.max(...six) > N) continue;
+      tot++; expected += pAny(N); cat[prize(six, d).cat]++;
+    }
+    const won = tot - cat[0];
+    return { cat, tot, won, expected, fixed: cat.slice(6).reduce((a, b) => a + b, 0) };
+  }
+
   // A saved or shared ticket ("8-12-15-18-20-34", from the URL hash or localStorage): six
   // distinct whole numbers in 1..n, sorted, or null. Anything else is ignored, never half-used.
   function parseTicket(str, n) {
@@ -129,6 +146,6 @@
     return six;
   }
 
-  const api = { prize, PRIZES, parseTicket, schedule, bolsa, comb, poolOf, repeats, expectedRepeats, replay, STRATEGIES, myTicket, hasConsecutive, pConsecutive, freq, sameBall };
+  const api = { prize, PRIZES, prizeHistory, parseTicket, schedule, bolsa, comb, poolOf, repeats, expectedRepeats, replay, STRATEGIES, myTicket, hasConsecutive, pConsecutive, freq, sameBall };
   if (typeof module !== 'undefined') module.exports = api; else root.Melate = api;
 })(this);
