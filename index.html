@@ -60,6 +60,12 @@
   #latestmine .draw { margin-top:10px; padding-top:10px; border-top:1px solid var(--line); }
   #latestmine .b { width:32px; height:32px; font-size:.9rem; }
   #latestmine .prize { margin:8px 0 0; font-weight:600; }
+  #recent { margin-top:8px; font-size:.92rem; flex-basis:100%; }
+  #recent summary { cursor:pointer; }
+  #recent table { border-collapse:collapse; margin-top:6px; width:100%; max-width:380px; }
+  #recent td { padding:3px 6px 3px 0; white-space:nowrap; }
+  #recent td:last-child { text-align:right; }
+  #recent tr.won { font-weight:600; }
 </style>
 </head>
 <body>
@@ -191,7 +197,17 @@ function remember(six) {
   if (six && tapped) store.set(v);
   if (six || /boleto=/.test(location.hash)) history.replaceState(null, '', location.pathname + location.search + (six ? '#boleto=' + v : ''));
   $('latestmine').innerHTML = six ? `<div class="draw"><div class="when"><b>Tus números: ${prizeLine(six)}</b>
-    <a href="#mine" onclick="document.getElementById('mine').scrollIntoView({ behavior: 'smooth' }); return false">ver en todos los sorteos</a></div>${balls(six, newest[2], newest[4])}${prizeSay(six)}</div>` : '';
+    <a href="#mine" onclick="document.getElementById('mine').scrollIntoView({ behavior: 'smooth' }); return false">ver en todos los sorteos</a></div>${balls(six, newest[2], newest[4])}${prizeSay(six)}${recentSay(six)}</div>` : '';
+}
+// the last ten draws, newest first: someone who checks once a week has missed two or three
+const RECIENTES = 10, MES3 = ['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'], DIA3 = ['dom','lun','mar','mié','jue','vie','sáb'];
+const corta = (iso) => `${DIA3[new Date(iso + 'T00:00:00Z').getUTCDay()]} ${Number(iso.slice(8))} ${MES3[Number(iso.slice(5, 7)) - 1]}`;
+function recentSay(six) {
+  const R = M.recent(draws, six, RECIENTES);
+  const head = R.won ? `ganaron premio en <b>${R.won}</b>${R.pesos ? ` (${pesos(R.pesos)} en premios fijos${R.big ? ', más uno de 4 o más aciertos' : ''})` : R.big ? ' (de 4 o más aciertos)' : ''}` : 'ningún premio';
+  return `<details id="recent"><summary>Tus números en los últimos ${RECIENTES} sorteos: ${head}</summary>
+    <table>${R.rows.map((r) => `<tr${r.cat ? ' class="won"' : ''}><td>${r.draw[0]}</td><td>${corta(r.draw[1])}</td><td>${r.k} de 6${r.ad ? ' + ad.' : ''}</td><td>${
+      r.cat ? (r.amount ? pesos(r.amount) : `${r.cat}.ª cat.`) : '—'}</td></tr>`).join('')}</table></details>`;
 }
 // "2 de 6" alone does not say that 2 hits is a prize: the top card names the category it wins.
 const prizeLine = (six) => { const P = M.prize(six, newest); return `${P.k} de 6${P.ad ? ', más el adicional,' : ''} en este sorteo`; };

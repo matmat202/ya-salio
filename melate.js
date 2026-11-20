@@ -136,6 +136,15 @@
     return { cat, tot, won, expected, fixed: cat.slice(6).reduce((a, b) => a + b, 0) };
   }
 
+  // A returning player checks now and then, and Melate draws three times a week: the top card
+  // lists the ticket against each of the last n draws, newest first, so none of the missed ones
+  // is skipped. `pesos` sums only the fixed amounts (2-3 hits); a 4+ hit is flagged, not priced.
+  function recent(draws, six, n) {
+    const rows = draws.slice(-n).reverse().map((d) => ({ draw: d, ...prize(six, d) }));
+    const won = rows.filter((r) => r.cat);
+    return { rows, won: won.length, pesos: won.reduce((s, r) => s + (r.amount || 0), 0), big: won.some((r) => r.amount == null) };
+  }
+
   // A saved or shared ticket ("8-12-15-18-20-34", from the URL hash or localStorage): six
   // distinct whole numbers in 1..n, sorted, or null. Anything else is ignored, never half-used.
   function parseTicket(str, n) {
@@ -146,6 +155,6 @@
     return six;
   }
 
-  const api = { prize, PRIZES, prizeHistory, parseTicket, schedule, bolsa, comb, poolOf, repeats, expectedRepeats, replay, STRATEGIES, myTicket, hasConsecutive, pConsecutive, freq, sameBall };
+  const api = { prize, recent, PRIZES, prizeHistory, parseTicket, schedule, bolsa, comb, poolOf, repeats, expectedRepeats, replay, STRATEGIES, myTicket, hasConsecutive, pConsecutive, freq, sameBall };
   if (typeof module !== 'undefined') module.exports = api; else root.Melate = api;
 })(this);
