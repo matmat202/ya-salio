@@ -301,11 +301,17 @@ $('bolsa').innerHTML = `<p>La bolsa del sorteo <b>${B.next}</b>, el que sigue al
   ${chart}
   <p>Cada sorteo sin ganador la bolsa sube unos ${mill(B.medianRise)}, y cuando alguien acierta los seis vuelve a ${mill(Math.min(...B.resets.map((d) => d[3])))}.
   Eso ha pasado ${B.resets.length} veces desde 2007: un ganador cada ${Math.round(B.everyDraws)} sorteos, más o menos.
-  ${B.sinceReset != null ? `El último fue hace ${B.sinceReset} sorteo${B.sinceReset === 1 ? '' : 's'}.` : ''}</p>
+  ${B.lastReset ? `El último fue ${B.sinceReset === 0 ? 'en el sorteo más reciente, el' : 'en el sorteo'} ${B.lastReset[0]} (${fecha(B.lastReset[1])})${
+    B.sinceReset === 0 ? `, que pagó ${mill(B.lastWon)}` : `, hace ${B.sinceReset} sorteo${B.sinceReset === 1 ? '' : 's'}`}.` : ''}</p>
   <p class="mute">Solo el premio mayor: los premios por 2 a 5 aciertos suman algo más, pero no vienen en el histórico oficial.
   Y aun arriba de la línea no es negocio: el premio paga impuestos, y si otro boleto también acierta, se reparte.</p>
   <p><a href="story/">¿Sale antes la bolsa grande? La historia, sorteo por sorteo →</a></p>`;
 document.querySelectorAll('#bolsa .axis').forEach(declutter);
+// the top card says when the newest draw is the one that paid the jackpot: that is the first
+// thing a "¿ya salió?" visitor asks after their own numbers
+if (B.lastReset && B.lastReset[0] === newest[0])
+  $('latestmine').insertAdjacentHTML('beforebegin', `<p id="jackpot"><b>Hubo ganador del premio mayor</b>: en este sorteo alguien acertó los seis, y la bolsa de ${mill(B.lastWon)} se pagó.
+    Por eso la bolsa del sorteo ${B.next} vuelve a ${mill(B.last[3])}.</p>`);
 // Axis labels sit at absolute positions, so a wider font (1.5x text, WCAG 1.4.12 spacing)
 // pushes neighbours into each other: text-spacing caught '150 h' over '175 h', '9+10 Mar'
 // over 'all' and '2013' over '2015' on 2026-11-06. Keep both ends, hide a middle label only

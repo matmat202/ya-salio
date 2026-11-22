@@ -80,16 +80,16 @@
     const m = draws.filter((d) => d[0] >= first && d[3]);
     const last = m[m.length - 1], above = m.filter((d) => d[3] >= breakEven);
     const peak = m.reduce((a, d) => (d[3] > a[3] ? d : a), m[0]);
-    const resets = [], rises = [];
+    const resets = [], rises = [], won = [];   // won[k]: the jackpot resets[k] paid (the row before it announced it)
     for (let i = 1; i < m.length; i++) {
-      if (m[i][3] < m[i - 1][3]) resets.push(m[i]); else if (m[i][3] > m[i - 1][3]) rises.push(m[i][3] - m[i - 1][3]);
+      if (m[i][3] < m[i - 1][3]) { resets.push(m[i]); won.push(m[i - 1][3]); } else if (m[i][3] > m[i - 1][3]) rises.push(m[i][3] - m[i - 1][3]);
     }
     rises.sort((a, b) => a - b);
     const runs = [];   // consecutive draws above break-even
     for (const d of above) { const r = runs[runs.length - 1]; if (r && d[0] === r[r.length - 1][0] + 1) r.push(d); else runs.push([d]); }
     const lastReset = resets[resets.length - 1];
     return { N, odds, price, breakEven, last, next: last[0] + 1, peakDraw: peak[0] + 1, perTicket: last[3] / odds, above, runs, peak, resets,
-             everyDraws: m.length / resets.length, sinceReset: lastReset ? last[0] - lastReset[0] : null,
+             everyDraws: m.length / resets.length, sinceReset: lastReset ? last[0] - lastReset[0] : null, lastReset, lastWon: won[won.length - 1],
              medianRise: rises[Math.floor(rises.length / 2)], series: m.map((d) => [d[0], d[3]]) };
   }
 
