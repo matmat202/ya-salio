@@ -110,9 +110,20 @@
   // What a ticket wins in one draw. Melate pays nine categories: 6 hits; then 5, 4, 3 and 2
   // hits, each split by whether the ticket also holds the adicional (d[4]). The last four pay a
   // fixed amount in pesos, the first five a share of that draw's sales. Table and amounts from
-  // loterianacional.com/melate/premios (read 2026-11-16). 1 hit + adicional pays nothing.
+  // loterianacional.gob.mx/Melate/Melate, "Niveles de premiación" (read 2026-11-23; the
+  // unofficial loterianacional.com said $32.26 for 8.ª, the official page $32.25). 1 hit +
+  // adicional pays nothing.
   const PRIZES = [[6, false, null], [5, true, null], [5, false, null], [4, true, null], [4, false, null],
-    [3, true, 161.29], [3, false, 43.01], [2, true, 32.26], [2, false, 26.88]];
+    [3, true, 161.29], [3, false, 43.01], [2, true, 32.25], [2, false, 26.88]];
+
+  // The two side games drawn the same night against the same six, from the same official page:
+  // Revancha pays 6, 5 and 4 hits a share of sales and 3 and 2 hits a fixed amount; Revanchita
+  // pays only six. No adicional in either. [hits, pesos or null], indexed by place - 1.
+  const OTRAS = { revancha: [[6, null], [5, null], [4, null], [3, 26.80], [2, 10.75]], revanchita: [[6, null]] };
+  function prizeOtra(game, six, nums) {
+    const k = sameBall(six, nums), i = OTRAS[game].findIndex(([h]) => h === k);
+    return { k, cat: i + 1, amount: i < 0 ? null : OTRAS[game][i][1] };
+  }
   function prize(six, d) {
     const k = sameBall(six, d[2]), ad = d[4] != null && six.includes(d[4]);
     const i = PRIZES.findIndex(([h, a]) => h === k && (a === ad || h === 6));
@@ -139,10 +150,19 @@
   // A returning player checks now and then, and Melate draws three times a week: the top card
   // lists the ticket against each of the last n draws, newest first, so none of the missed ones
   // is skipped. `pesos` sums only the fixed amounts (2-3 hits); a 4+ hit is flagged, not priced.
-  function recent(draws, six, n) {
-    const rows = draws.slice(-n).reverse().map((d) => ({ draw: d, ...prize(six, d) }));
+  // `otras` (MELATE.otras, the newest draws of each side game) adds, per row, what the same six
+  // got in Revancha and Revanchita that night, matched by draw number (null where not held);
+  // their prizes are counted apart, since not every ticket plays them.
+  function recent(draws, six, n, otras) {
+    const rows = draws.slice(-n).reverse().map((d) => {
+      const o = {};
+      for (const g of Object.keys(otras || {})) { const e = otras[g].find((x) => x[0] === d[0]); o[g] = e ? prizeOtra(g, six, e[2]) : null; }
+      return { draw: d, ...prize(six, d), otras: o };
+    });
     const won = rows.filter((r) => r.cat);
-    return { rows, won: won.length, pesos: won.reduce((s, r) => s + (r.amount || 0), 0), big: won.some((r) => r.amount == null) };
+    const owon = rows.flatMap((r) => Object.values(r.otras).filter((p) => p && p.cat));
+    return { rows, won: won.length, pesos: won.reduce((s, r) => s + (r.amount || 0), 0), big: won.some((r) => r.amount == null),
+             otrasWon: owon.length, otrasPesos: owon.reduce((s, p) => s + (p.amount || 0), 0), otrasBig: owon.some((p) => p.amount == null) };
   }
 
   // A saved or shared ticket ("8-12-15-18-20-34", from the URL hash or localStorage): six
@@ -155,6 +175,6 @@
     return six;
   }
 
-  const api = { prize, recent, PRIZES, prizeHistory, parseTicket, schedule, bolsa, comb, poolOf, repeats, expectedRepeats, replay, STRATEGIES, myTicket, hasConsecutive, pConsecutive, freq, sameBall };
+  const api = { prize, recent, PRIZES, OTRAS, prizeOtra, prizeHistory, parseTicket, schedule, bolsa, comb, poolOf, repeats, expectedRepeats, replay, STRATEGIES, myTicket, hasConsecutive, pConsecutive, freq, sameBall };
   if (typeof module !== 'undefined') module.exports = api; else root.Melate = api;
 })(this);

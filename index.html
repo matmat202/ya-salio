@@ -66,6 +66,13 @@
   #recent td { padding:3px 6px 3px 0; white-space:nowrap; }
   #recent td:last-child { text-align:right; }
   #recent tr.won { font-weight:600; }
+  #recent td.o { color:var(--mute); font-weight:400; }
+  #recent tr.h td { color:var(--mute); font-size:.85rem; }
+  #recent td.o.won { color:var(--ink); font-weight:600; }
+  .otra { margin-top:8px; }
+  .otra .when { font-size:.9rem; }
+  .otra .b { width:30px; height:30px; font-size:.85rem; background:var(--ink); color:var(--bg); }
+  #otrasmine { margin:6px 0 0; }
 </style>
 </head>
 <body>
@@ -139,7 +146,17 @@ const hoyQ = new URLSearchParams(location.search).get('hoy');
 const hoy = (/^\d{4}-\d\d-\d\d$/.test(hoyQ || '') && hoyQ) || new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Mexico_City' }).format(new Date());
 const S = M.schedule(newest[1], hoy);
 const OFICIAL = 'https://www.loterianacional.gob.mx/Melate/Resultados';
+// Revancha and Revanchita, drawn the same night against the same six: only when the build holds
+// the newest draw of each (an older draws.js has none, and the top card then shows Melate alone)
+const OTRAS = Object.fromEntries(Object.entries(window.MELATE.otras || {}).filter(([, r]) => r.length && r[r.length - 1][0] === newest[0]));
+const NOMBRE = { revancha: 'Revancha', revanchita: 'Revanchita' };
+const otraHoy = (g) => OTRAS[g][OTRAS[g].length - 1];
+const mill1 = (x) => `$${(x / 1e6).toLocaleString('es-MX', { maximumFractionDigits: 1 })} millones`;
+const otrasBalls = Object.keys(OTRAS).map((g) => `<div class="draw otra"><div class="when"><b>${NOMBRE[g]}</b></div>${balls(otraHoy(g)[2])}</div>`).join('');
+const bolsas = Object.keys(OTRAS).length && newest[3] ? `<p class="mute" id="bolsas">Bolsas del próximo sorteo: Melate ${mill1(newest[3])}${
+  Object.keys(OTRAS).map((g) => otraHoy(g)[3] ? ` · ${NOMBRE[g]} ${mill1(otraHoy(g)[3])}` : '').join('')}.</p>` : '';
 $('latest').innerHTML = `<div class="draw"><div class="when"><b>Último sorteo: ${newest[0]}</b>${dia(newest[1])} ${fecha(newest[1])}</div>${balls(newest[2], null, newest[4], true)}</div>
+  ${otrasBalls}${bolsas}
   ${S.missed.length ? `<p class="warn">Esta página va atrasada: después de este hubo ${S.missed.length === 1 ? 'otro sorteo' : `${S.missed.length} sorteos más`}
     (${S.missed.map((d) => `${dia(d)} ${Number(d.slice(8))}`).join(', ')}). El resultado más nuevo está en <a href="${OFICIAL}">la Lotería Nacional</a>.</p>` : ''}
   <div id="latestmine"></div>
@@ -197,17 +214,31 @@ function remember(six) {
   if (six && tapped) store.set(v);
   if (six || /boleto=/.test(location.hash)) history.replaceState(null, '', location.pathname + location.search + (six ? '#boleto=' + v : ''));
   $('latestmine').innerHTML = six ? `<div class="draw"><div class="when"><b>Tus números: ${prizeLine(six)}</b>
-    <a href="#mine" onclick="document.getElementById('mine').scrollIntoView({ behavior: 'smooth' }); return false">ver en todos los sorteos</a></div>${balls(six, newest[2], newest[4])}${prizeSay(six)}${recentSay(six)}</div>` : '';
+    <a href="#mine" onclick="document.getElementById('mine').scrollIntoView({ behavior: 'smooth' }); return false">ver en todos los sorteos</a></div>${balls(six, newest[2], newest[4])}${prizeSay(six)}${otrasSay(six)}${recentSay(six)}</div>` : '';
 }
 // the last ten draws, newest first: someone who checks once a week has missed two or three
 const RECIENTES = 10, MES3 = ['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'], DIA3 = ['dom','lun','mar','mié','jue','vie','sáb'];
 const corta = (iso) => `${DIA3[new Date(iso + 'T00:00:00Z').getUTCDay()]} ${Number(iso.slice(8))} ${MES3[Number(iso.slice(5, 7)) - 1]}`;
 function recentSay(six) {
-  const R = M.recent(draws, six, RECIENTES);
+  const R = M.recent(draws, six, RECIENTES, OTRAS), G = Object.keys(OTRAS);
   const head = R.won ? `ganaron premio en <b>${R.won}</b>${R.pesos ? ` (${pesos(R.pesos)} en premios fijos${R.big ? ', más uno de 4 o más aciertos' : ''})` : R.big ? ' (de 4 o más aciertos)' : ''}` : 'ningún premio';
-  return `<details id="recent"><summary>Tus números en los últimos ${RECIENTES} sorteos: ${head}</summary>
-    <table>${R.rows.map((r) => `<tr${r.cat ? ' class="won"' : ''}><td>${r.draw[0]}</td><td>${corta(r.draw[1])}</td><td>${r.k} de 6${r.ad ? ' + ad.' : ''}</td><td>${
-      r.cat ? (r.amount ? pesos(r.amount) : `${r.cat}.ª cat.`) : '—'}</td></tr>`).join('')}</table></details>`;
+  // one cell for both side games, so the table still fits a phone: "2 · 0", then the prize when
+  // either won ("2 · 0 $10.75", or "6.º"-style places for the variable ones); "–" where not held
+  const cell = (o) => { const ps = G.map((g) => o[g]), won = ps.filter((p) => p && p.cat);
+    return `<td class="o${won.length ? ' won' : ''}">${ps.map((p) => (p ? p.k : '–')).join(' · ')}${won.map((p) => ` ${p.amount ? pesos(p.amount) : `${p.cat}.º lugar`}`).join('')}</td>`; };
+  const ohead = R.otrasWon ? `premio en <b>${R.otrasWon}</b>${R.otrasPesos ? ` (${pesos(R.otrasPesos)}${R.otrasBig ? ', más uno grande' : ''})` : ' (de los grandes)'}` : 'ningún premio';
+  return `<details id="recent"><summary>Tus números en los últimos ${RECIENTES} sorteos: ${head}${G.length ? `. En Revancha y Revanchita, ${ohead}` : ''}</summary>
+    <table>${G.length ? `<tr class="h"><td></td><td></td><td>Melate</td><td></td><td>${G.map((g) => (g === 'revancha' ? 'Rev.' : 'Rvta.')).join(' · ')}</td></tr>` : ''}${
+      R.rows.map((r) => `<tr${r.cat ? ' class="won"' : ''}><td>${r.draw[0]}</td><td>${corta(r.draw[1])}</td><td>${G.length ? r.k : `${r.k} de 6`}${r.ad ? ' + ad.' : ''}</td><td>${
+      r.cat ? (r.amount ? pesos(r.amount) : `${r.cat}.ª cat.`) : '—'}</td>${G.length ? cell(r.otras) : ''}</tr>`).join('')}</table>
+    ${G.length ? '<p class="mute">Rev. y Rvta.: aciertos en Revancha y Revanchita, si los jugaste. Revanchita solo paga los seis.</p>' : ''}</details>`;
+}
+// the same six in tonight's Revancha and Revanchita: a ticket that paid $30 plays all three
+function otrasSay(six) {
+  const G = Object.keys(OTRAS); if (!G.length) return '';
+  const say = (g) => { const p = M.prizeOtra(g, six, otraHoy(g)[2]);
+    return `${NOMBRE[g]}, <b>${p.k} de 6</b>${p.cat ? `: premio de ${p.cat}.º lugar${p.amount ? `, ${pesos(p.amount)}` : ', variable'}` : ''}`; };
+  return `<p id="otrasmine">Si jugaste también: ${G.map(say).join('; ')}.${G.some((g) => !M.prizeOtra(g, six, otraHoy(g)[2]).cat) ? ' <span class="mute">Revancha paga desde 2 aciertos; Revanchita solo los seis.</span>' : ''}</p>`;
 }
 // "2 de 6" alone does not say that 2 hits is a prize: the top card names the category it wins.
 const prizeLine = (six) => { const P = M.prize(six, newest); return `${P.k} de 6${P.ad ? ', más el adicional,' : ''} en este sorteo`; };
