@@ -73,6 +73,12 @@
   .otra .when { font-size:.9rem; }
   .otra .b { width:30px; height:30px; font-size:.85rem; background:var(--ink); color:var(--bg); }
   #otrasmine { margin:6px 0 0; }
+  #otros .otro { margin-top:10px; }
+  #otros .otro p { margin:4px 0 0; }
+  #boletos { margin-top:10px; }
+  #boletos .row { flex-wrap:wrap; gap:6px; }
+  #boletos button { font-variant-numeric: tabular-nums; }
+  #boletos button[aria-pressed="true"] { background:var(--ball); border-color:var(--ball); color:#fff; font-weight:600; }
 </style>
 </head>
 <body>
@@ -104,9 +110,10 @@
   <div class="card" id="stratout"></div>
 
   <h2>¿Y tus números?</h2>
-  <p>Toca seis números: los de siempre, los cumpleaños de la familia, lo que quieras. Te decimos qué les habría tocado en cada sorteo desde 1984.</p>
+  <p>Toca seis números: los de siempre, los cumpleaños de la familia, lo que quieras. Te decimos qué les habría tocado en cada sorteo desde 1984. Si juegas varios boletos, guárdalos todos: arriba verás cómo le fue a cada uno.</p>
   <div class="grid" id="grid"></div>
   <div class="row"><button id="clear">Borrar</button> <button id="lucky">Seis al azar</button></div>
+  <div id="boletos"></div>
   <div class="card" id="mine"><p class="mute">Faltan 6 números.</p></div>
 
   <h2>¿Cuánto vale tu boleto hoy?</h2>
@@ -203,18 +210,46 @@ showStrat('calientes');
 // (#boleto=8-12-15-18-20-34), so a reload, a bookmark or a link sent to the family brings it
 // back, and the card at the top says how it did in the newest draw. Only a tap saves: opening
 // someone else's link shows their six without replacing the ones kept on this phone.
-const KEY = 'yasalio.boleto';
-const store = { get() { try { return localStorage.getItem(KEY); } catch (e) { return null; } },
-  set(v) { try { if (v) localStorage.setItem(KEY, v); else localStorage.removeItem(KEY); } catch (e) {} } };
+// Several sixes can be kept (a family plays more than one): `saved` is the list, `slot` the one
+// the grid is editing (saved.length = a new one). The top card shows the grid's six in full and
+// every other kept six in one short block each. A phone that kept one six under the old key
+// ('yasalio.boleto') still finds it.
+const KEY = 'yasalio.boletos', OLDKEY = 'yasalio.boleto';
+const store = { get() { try { return localStorage.getItem(KEY) || localStorage.getItem(OLDKEY); } catch (e) { return null; } },
+  set(v) { try { if (v) localStorage.setItem(KEY, v); else localStorage.removeItem(KEY); localStorage.removeItem(OLDKEY); } catch (e) {} } };
+const key6 = (six) => six.join('-');
 const fromHash = M.parseTicket((location.hash.match(/boleto=([0-9,-]+)/) || [])[1], N);
-const pick = fromHash || M.parseTicket(store.get(), N) || [];
-let tapped = false;
+let saved = M.parseTickets(store.get(), N);
+const pick = fromHash || (saved[0] ? [...saved[0]] : []);
+const slotOf = (six) => { const i = saved.findIndex((t) => key6(t) === key6(six)); return i < 0 ? saved.length : i; };
+let slot = fromHash ? slotOf(fromHash) : 0, tapped = false;
+const persist = () => store.set(saved.map(key6).join(','));
 function remember(six) {
-  const v = six ? six.join('-') : '';
-  if (six && tapped) store.set(v);
-  if (six || /boleto=/.test(location.hash)) history.replaceState(null, '', location.pathname + location.search + (six ? '#boleto=' + v : ''));
-  $('latestmine').innerHTML = six ? `<div class="draw"><div class="when"><b>Tus números: ${prizeLine(six)}</b>
-    <a href="#mine" onclick="document.getElementById('mine').scrollIntoView({ behavior: 'smooth' }); return false">ver en todos los sorteos</a></div>${balls(six, newest[2], newest[4])}${prizeSay(six)}${otrasSay(six)}${recentSay(six)}</div>` : '';
+  if (six && tapped) { const r = M.keepTicket(saved, slot, six); if (r.slot >= 0) { saved = r.list; slot = r.slot; persist(); } }
+  if (six || /boleto=/.test(location.hash)) history.replaceState(null, '', location.pathname + location.search + (six ? '#boleto=' + key6(six) : ''));
+  $('latestmine').innerHTML = (six ? `<div class="draw"><div class="when"><b>Tus números: ${prizeLine(six)}</b>
+    <a href="#mine" onclick="document.getElementById('mine').scrollIntoView({ behavior: 'smooth' }); return false">ver en todos los sorteos</a></div>${balls(six, newest[2], newest[4])}${prizeSay(six)}${otrasSay(six)}${recentSay(six)}</div>` : '')
+    + otrosSay(six);
+  renderBoletos(six);
+}
+// every other kept six against the newest draw: Melate hits and prize, then the side games
+function otrosSay(six) {
+  const rest = saved.filter((t) => !six || key6(t) !== key6(six)); if (!rest.length) return '';
+  const G = Object.keys(OTRAS);
+  const one = (t) => { const P = M.prize(t, newest);
+    const mel = `Melate, <b>${P.k} de 6</b>${P.ad ? ' + ad.' : ''}${P.cat ? `: ${P.amount ? pesos(P.amount) : `${P.cat}.ª categoría`}` : ''}`;
+    const ot = G.map((g) => { const p = M.prizeOtra(g, t, otraHoy(g)[2]); return `${NOMBRE[g]} ${p.k}${p.cat ? `: ${p.amount ? pesos(p.amount) : `${p.cat}.º lugar`}` : ''}`; });
+    return `<div class="otro${P.cat ? ' won' : ''}">${balls(t, newest[2], newest[4])}<p>${[mel, ...ot].join(' · ')}</p></div>`; };
+  return `<div class="draw" id="otros"><div class="when"><b>${six ? (rest.length === 1 ? 'Tu otro boleto' : `Tus otros ${rest.length} boletos`) : 'Tus boletos'} en este sorteo</b></div>${rest.map(one).join('')}</div>`;
+}
+// the kept sixes under the grid: tap one to see or change it, or start another
+function renderBoletos(six) {
+  const full = six && slot < saved.length, more = saved.length < M.MAXBOLETOS, unsaved = six && !full && more;
+  if (!saved.length && !unsaved) { $('boletos').innerHTML = ''; return; }
+  $('boletos').innerHTML = `${saved.length ? `<p class="mute">Tus boletos guardados en este teléfono${saved.length > 1 ? ` (${saved.length})` : ''}: toca uno para verlo o cambiarlo.</p>` : ''}
+    <div class="row">${saved.map((t, i) => `<button data-slot="${i}" aria-pressed="${i === slot && !!six}">${key6(t)}</button>`).join('')}${
+      full && more ? '<button data-slot="new">+ Otro boleto</button>' : ''}${unsaved ? '<button data-slot="save">Guardar este boleto</button>' : ''}</div>
+    ${full && !more ? `<p class="mute">Caben ${M.MAXBOLETOS} boletos; borra uno para agregar otro.</p>` : ''}`;
 }
 // the last ten draws, newest first: someone who checks once a week has missed two or three
 const RECIENTES = 10, MES3 = ['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'], DIA3 = ['dom','lun','mar','mié','jue','vie','sáb'];
@@ -285,13 +320,18 @@ $('mine').onclick = async (ev) => {
 };
 $('grid').onclick = (ev) => { const n = +(ev.target.dataset && ev.target.dataset.n); if (!n) return; tapped = true;
   const i = pick.indexOf(n); if (i >= 0) pick.splice(i, 1); else if (pick.length < 6) pick.push(n); renderMine(); };
-$('clear').onclick = () => { pick.length = 0; store.set(null); renderMine(); };
+// Borrar takes the six off the grid and, if it was kept, off the phone
+$('clear').onclick = () => { if (slot < saved.length) { saved = saved.filter((_, i) => i !== slot); persist(); }
+  pick.length = 0; slot = saved.length; renderMine(); };
+$('boletos').onclick = (ev) => { const s = ev.target.dataset && ev.target.dataset.slot; if (s == null) return;
+  if (s === 'save') { tapped = true; renderMine(); return; }
+  slot = s === 'new' ? saved.length : +s; pick.splice(0, pick.length, ...(s === 'new' ? [] : saved[slot])); renderMine(); };
 $('lucky').onclick = () => { tapped = true; pick.length = 0; while (pick.length < 6) { const x = 1 + Math.floor(Math.random() * N); if (!pick.includes(x)) pick.push(x); } renderMine(); };
 renderMine();
 // a shared link opened in a tab already on this page changes only the hash: no reload happens
 addEventListener('hashchange', () => {
   const six = M.parseTicket((location.hash.match(/boleto=([0-9,-]+)/) || [])[1], N);
-  if (six && six.join('-') !== [...pick].sort((a, b) => a - b).join('-')) { tapped = false; pick.splice(0, pick.length, ...six); renderMine(); }
+  if (six && six.join('-') !== [...pick].sort((a, b) => a - b).join('-')) { tapped = false; slot = slotOf(six); pick.splice(0, pick.length, ...six); renderMine(); }
 });
 
 // 4. consecutive numbers

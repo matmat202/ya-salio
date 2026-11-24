@@ -175,6 +175,29 @@
     return six;
   }
 
-  const api = { prize, recent, PRIZES, OTRAS, prizeOtra, prizeHistory, parseTicket, schedule, bolsa, comb, poolOf, repeats, expectedRepeats, replay, STRATEGIES, myTicket, hasConsecutive, pConsecutive, freq, sameBall };
+  // A family plays more than one six, so the phone keeps a list ("8-12-15-18-20-34,1-2-3-4-5-6").
+  // Each part goes through parseTicket; a bad part is dropped without losing the others, a
+  // repeated six is kept once, and past MAXBOLETOS the rest is ignored.
+  const MAXBOLETOS = 10;
+  const same = (a, b) => a.join('-') === b.join('-');
+  function parseTickets(str, n) {
+    const out = [];
+    for (const part of String(str || '').split(',')) {
+      const six = parseTicket(part, n);
+      if (six && out.length < MAXBOLETOS && !out.some((t) => same(t, six))) out.push(six);
+    }
+    return out;
+  }
+  // Put `six` in slot i of the list (i === list.length adds it). If that six is already kept in
+  // another slot, the edited slot goes away and that one is the slot: never two copies.
+  function keepTicket(list, i, six) {
+    const j = list.findIndex((t) => same(t, six));
+    if (j >= 0 && j !== i) { const out = list.filter((_, k) => k !== i); return { list: out, slot: out.findIndex((t) => same(t, six)) }; }
+    if (i >= list.length && list.length >= MAXBOLETOS) return { list, slot: -1 };
+    const out = list.slice(); out[Math.min(i, list.length)] = six;
+    return { list: out, slot: Math.min(i, list.length) };
+  }
+
+  const api = { prize, recent, PRIZES, OTRAS, prizeOtra, prizeHistory, parseTicket, parseTickets, keepTicket, MAXBOLETOS, schedule, bolsa, comb, poolOf, repeats, expectedRepeats, replay, STRATEGIES, myTicket, hasConsecutive, pConsecutive, freq, sameBall };
   if (typeof module !== 'undefined') module.exports = api; else root.Melate = api;
 })(this);
